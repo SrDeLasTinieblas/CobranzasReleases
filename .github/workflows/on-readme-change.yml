@@ -43,6 +43,14 @@ jobs:
             "${{ steps.release.outputs.apk_url }}" \
             -o "${{ steps.release.outputs.apk_name }}"
 
+      - name: Borrar release existente si existe
+        env:
+          GH_TOKEN: ${{ secrets.GT_AppCuentasPorCobrarRele }}
+        run: |
+          gh release delete "v${{ steps.version.outputs.version }}" \
+            --repo SrDeLasTinieblas/CobranzasReleases \
+            --yes || true
+
       - name: Crear release en CobranzasReleases
         env:
           GH_TOKEN: ${{ secrets.GT_AppCuentasPorCobrarRele }}
