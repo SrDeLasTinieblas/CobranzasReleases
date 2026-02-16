@@ -47,8 +47,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GT_AppCuentasPorCobrarRele }}
         run: |
+          echo '${{ steps.release.outputs.body }}' > release_notes.md
           gh release create "v${{ steps.version.outputs.version }}" \
             "${{ steps.release.outputs.apk_name }}" \
             --repo SrDeLasTinieblas/CobranzasReleases \
             --title "Release v${{ steps.version.outputs.version }}" \
-            --notes "${{ steps.release.outputs.body }}"
+            --notes-file release_notes.md
