@@ -1,0 +1,13 @@
+name: On README Change
+
+on:
+  push:
+    paths:
+      - 'README.md'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Hola"
