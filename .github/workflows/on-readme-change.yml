@@ -6,8 +6,49 @@ on:
       - 'README.md'
 
 jobs:
-  notify:
+  copy-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Hola"
+
+      - name: Leer version del README
+        id: version
+        run: |
+          VERSION=$(grep -oP '[0-9]+\.[0-9]+\.[0-9]+' README.md | head -1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version detectada: $VERSION"
+
+      - name: Obtener ultimo release de AppCuentasPorCobrar
+        id: release
+        run: |
+          RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GT_AppCuentasPorCobrar }}" \
+            https://api.github.com/repos/SrDeLasTinieblas/AppCuentasPorCobrar/releases/latest)
+
+          TAG=$(echo "$RESPONSE" | jq -r '.tag_name')
+          BODY=$(echo "$RESPONSE" | jq -r '.body')
+          APK_URL=$(echo "$RESPONSE" | jq -r '.assets[0].url')
+          APK_NAME=$(echo "$RESPONSE" | jq -r '.assets[0].name')
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Descargar APK
+        run: |
+          curl -L -H "Authorization: token ${{ secrets.GT_AppCuentasPorCobrar }}" \
+            -H "Accept: application/octet-stream" \
+            "${{ steps.release.outputs.apk_url }}" \
+            -o "${{ steps.release.outputs.apk_name }}"
+
+      - name: Crear release en CobranzasReleases
+        env:
+          GH_TOKEN: ${{ secrets.GT_AppCuentasPorCobrarRele }}
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            "${{ steps.release.outputs.apk_name }}" \
+            --repo SrDeLasTinieblas/CobranzasReleases \
+            --title "Release v${{ steps.version.outputs.version }}" \
+            --notes "${{ steps.release.outputs.body }}"
